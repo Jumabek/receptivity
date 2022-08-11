@@ -1,0 +1,8 @@
+Step Description,#participants,#responses
+Original data,79,3715
+Exclude ESM if not within campaign period,79,3592
+Exclude ESM if no associated sensor data,77,3543
+Exclude ESM if timestamp is currupted,77,3537
+After excluding duplicate data,77,3426
+After excluding participants with zero variance in their responses,74,3401
+After excluding participants with most sensor sources missing,73,3334
