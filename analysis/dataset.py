@@ -346,9 +346,7 @@ def extract_sub(_pid: str, _label: pd.DataFrame, _w_name, _w_size, num_sub,  pba
     
     for ema_time in _label.index: #for each ema extract |_w_size//_sw_size}| window features
         sub_windows = np.arange(ema_time-timedelta(seconds=_w_size+_sw_size), ema_time, timedelta(seconds=_sw_size))        
-        for i,_t in enumerate(sub_windows[1:]):
-            # if i==0:
-            #     continue
+        for i,_t in enumerate(sub_windows[1:], start=1):
             _row = []
             # Windowed Features
             for _d_name in _raw.keys():

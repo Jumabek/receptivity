@@ -16,7 +16,7 @@ from utils import *
 Log.LEVEL = 2
 from sys import platform
 
-reg_ex = '/home/juma/dataonssd/kemphone/aggregated_csv/{}_*'    
+reg_ex = '../data/kemphone/aggregated_csv/{}_*'    
     
 
 COLUMNS = get_columns()
@@ -38,17 +38,13 @@ def _load_data(data_source: str, pid: str, in_field: str=None, in_value: Iterabl
         # https://docs.google.com/document/d/1dqI7F0-3st5771hrV2RIgh-mG_El5fvz/edit
         data.timestamp = pd.to_datetime( #All timestamps are represented in UTC+0.
             data.timestamp.values, unit='ms', utc=True
-            ).tz_convert(TZ).tz_localize(None)
-    except Exception as e:
-        print('glob(reg_ex.format(pid))',glob(reg_ex.format(pid)))
-        print('_load_data', 'error in read_csv', pid,e)
-    if in_field and in_value:
-        try:
+        ).tz_convert(TZ).tz_localize(None)
+        
+        if in_field and in_value:        
             data = data.loc[data[in_field].isin(in_value)]
-        except:
-            Log.err(
-                    '_load_data', 'Error occurs on pid = {}, data = {} data.columns = {} \nTraceback:\n{}'.format(pid,
-                     data_source, data.columns,  traceback.format_exc()))
+    except Exception as e:        
+        print('_load_data', 'error in read_csv', pid,e)
+            
     return data.set_index('timestamp').dropna(how='all')
 
 
