@@ -400,7 +400,7 @@ def extract_sub(_pid: str, _label: pd.DataFrame, _w_name, _w_size, num_sub,  pba
 
 
 def extract_sliding_sub_features(
-        _pid: str, _label: pd.DataFrame, _sw_name, _sw_size
+        _pid: str, _label: pd.DataFrame, _sw_size_in_min
         , selected_features, pba: ActorHandle
     ):
     '''
@@ -413,8 +413,10 @@ def extract_sliding_sub_features(
     #_sw_name, _sw_size = get_sub_window_size(_w_name, _w_size)  
 
     # here _sw_size corresponds to subwindow size            
-    _sw_size_in_min = _sw_size//utils.SECONDS_IN_MIN 
-    _start_of_week = _label.index.min().replace(hour=10, minute=0, second=0) #10 am of the day when participant started collecting
+    #_sw_size_in_min = _sw_size//utils.SECONDS_IN_MIN 
+    
+    #10 am of the day when participant started collecting
+    _start_of_week = _label.index.min().replace(hour=10, minute=0, second=0) 
     
     _features = []
     for day in range(utils.COLLECTION_DAYS):
@@ -428,28 +430,29 @@ def extract_sliding_sub_features(
                    
             _row = []        
             # loop throuugh different data sources
-            for _d_name in _raw.keys():
+            for _d_name, _d_value in _raw.items():
                 if 'Today' in _d_name:
                     continue # no need to extract time features for (accumulated) daily sensor values             
-                try:
-                    _d_value = _raw[_d_name]                                                 
-                    
-                    _window_start = _t - dt.timedelta(seconds=_sw_size)                    
+                try:                    
+                    _window_start = _t - dt.timedelta(minutes=_sw_size_in_min)                    
                     _d_win = _d_value[_window_start:_t]                   
                     if len(_d_win)<1:
                         Log.info(
-                            'extract_sliding_sub_features:'
-                            , 'zero sized window {}-{} at {}'.format(
-                                _window_start, _window_start,_t
-                            )
+                            f'extract_sliding_sub_features: zero sized window\
+                                between{_window_start}-{_t} '
                         )
                         continue
 
 
                     _d_win_a = np.asarray(_d_win)    # throws away index(datetime)
-                    _f = _extract_nominal_feature(
-                        _d_win_a, False if _d_name in ['location_cluster', 'appUsage_appPackage'] else True
-                    ) if _d_value.dtype !=float else _extract_numeric_feature(_d_win_a)
+                    if _d_value.dtype !=float:
+                        _f = _extract_nominal_feature(
+                            _d_win_a
+                            , False if _d_name in ['location_cluster', 'appUsage_appPackage'] else True
+                        ) 
+                    
+                    else:
+                        _f = _extract_numeric_feature(_d_win_a)
                     
                     #_f_win = {'{}#{}#{}'.format(_d_name, _sw_name, k): v for k, v in _f.items()}
 
