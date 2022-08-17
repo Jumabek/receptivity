@@ -399,8 +399,10 @@ def extract_sub(_pid: str, _label: pd.DataFrame, _w_name, _w_size, num_sub,  pba
     return _X
 
 
-def extract_sliding_sub_features(_pid: str, _label: pd.DataFrame, _w_name, 
-_w_size, selected_features, pba: ActorHandle):
+def extract_sliding_sub_features(
+        _pid: str, _label: pd.DataFrame, _sw_name, _sw_size
+        , selected_features, pba: ActorHandle
+    ):
     '''
     - Slides through the whole data (e.g, 30 min window)
     - used for Association erulwe mining
@@ -408,15 +410,20 @@ _w_size, selected_features, pba: ActorHandle):
     assert selected_features !=None, 'please pass selected_features'
     
     _raw = preprocess(_pid=_pid, _until=_label.index.max())
-    _sw_name, _sw_size = get_sub_window_size(_w_name, _w_size)  
-        
-    _sw_size_in_min = _sw_size//utils.SECONDS_IN_MIN # here _sw_size corresponds to subwindow size    
+    #_sw_name, _sw_size = get_sub_window_size(_w_name, _w_size)  
+
+    # here _sw_size corresponds to subwindow size            
+    _sw_size_in_min = _sw_size//utils.SECONDS_IN_MIN 
     _start_of_week = _label.index.min().replace(hour=10, minute=0, second=0) #10 am of the day when participant started collecting
     
     _features = []
     for day in range(utils.COLLECTION_DAYS):
         start_of_day = _start_of_week+datetime.timedelta(days=day) # DAY1 10 AM, DAY2 10 AM, ..
-        for minutes_passed in range(_sw_size_in_min, utils.COLLECTION_HOURS*utils.MIN_IN_HOUR+1, _sw_size_in_min):
+        for minutes_passed in range(
+            _sw_size_in_min
+            , utils.COLLECTION_HOURS*utils.MIN_IN_HOUR+1
+            , _sw_size_in_min
+        ):
             _t = start_of_day+datetime.timedelta(minutes=minutes_passed) 
                    
             _row = []        
@@ -428,10 +435,14 @@ _w_size, selected_features, pba: ActorHandle):
                     _d_value = _raw[_d_name]                                                 
                     
                     _window_start = _t - dt.timedelta(seconds=_sw_size)                    
-                    _window_end = _t - dt.timedelta(seconds=1)                                        
-                    _d_win = _d_value[_window_start:_window_end]                   
+                    _d_win = _d_value[_window_start:_t]                   
                     if len(_d_win)<1:
-                        Log.info('extract_sliding_sub_features:', 'zero sized window {}-{} at {}'.format(_window_start, _window_start,_t))
+                        Log.info(
+                            'extract_sliding_sub_features:'
+                            , 'zero sized window {}-{} at {}'.format(
+                                _window_start, _window_start,_t
+                            )
+                        )
                         continue
 
 
