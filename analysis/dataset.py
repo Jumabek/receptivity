@@ -461,7 +461,6 @@ def extract_slidingSubFeatures(
                         )
                         continue
 
-
                     _d_win_a = np.asarray(_d_win)    # throws away index(datetime)
                     if _d_value.dtype !=float:
                         _f = _extract_nominal_feature(
@@ -472,19 +471,14 @@ def extract_slidingSubFeatures(
                     else:
                         _f = _extract_numeric_feature(_d_win_a)
                     
-                    #_f_win = {'{}#{}#{}'.format(_d_name, _sw_name, k): v for k, v in _f.items()}
-
                     _f_win = {}
                     for k, v in _f.items():
                         feature_name = f'{_d_name}#{k}'
                         if feature_name in selected_features:
+                            feature_name = f'{feature_name}#{_sw_size_in_min}MIN'
                             _f_win[feature_name]=v
                         
                     _row.append(_f_win)                                
-                    # Log.info(
-                    #     'extract_slidingSubFeatures'
-                    #     , f'Complete sliding subwindow for {_d_name} on {_sw_size_in_min}MIN.'
-                    # )
                 except:
                     Log.err(
                         'extract_slidingSubFeatures'
@@ -499,11 +493,11 @@ def extract_slidingSubFeatures(
                 _feature = {}      
             
             _feature['pid'] = _pid
-            _feature['sliding_timestamp'] = _t            
+            _feature['timestamp'] = _t            
             _features.append(_feature)# appending feature for the given subwindow
 
     _X    = pd.DataFrame(_features)   
-    _X = _X.set_index(['pid','sliding_timestamp'])       
+    _X = _X.set_index(['pid','timestamp'])       
     Log.info('extract_slidingSubFeatures', 'Complete feature extraction (n = {}, dim = {}).'.format(_X.shape[0], _X.shape[1]))
     pba.update.remote(1)
     return _X
