@@ -433,11 +433,6 @@ def extract_slidingSubFeatures(
     assert selected_features !=None, 'please pass selected_features'
     
     _raw = preprocess(_pid=_pid, _until=_label.index.max())
-    #_sw_name, _sw_size = get_sub_window_size(_w_name, _w_size)  
-
-    # here _sw_size corresponds to subwindow size            
-    #_sw_size_in_min = _sw_size//utils.SECONDS_IN_MIN 
-    
     #10 am of the day when participant started collecting
     _start_of_week = _label.index.min().replace(hour=10, minute=0, second=0) 
     
@@ -482,7 +477,6 @@ def extract_slidingSubFeatures(
                     _f_win = {}
                     for k, v in _f.items():
                         feature_name = f'{_d_name}#{k}'
-                        print('feature_name',feature_name)
                         if feature_name in selected_features:
                             _f_win[feature_name]=v
                         
