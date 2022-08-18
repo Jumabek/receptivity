@@ -399,7 +399,30 @@ def extract_sub(_pid: str, _label: pd.DataFrame, _w_name, _w_size, num_sub,  pba
     return _X
 
 
-def extract_sliding_sub_features(
+def parallellize_extract_sliding(
+        labels: pd.DataFrame, _sw_size_in_min ,selected_features: list,
+        use_ray: bool = False             
+    ):
+    func = ray.remote(extract_slidingSubFeatures).remote if use_ray else extract_slidingSubFeatures
+
+    results = []
+    Log.LEVEL = 2
+    pb = ProgressBar(labels.index.get_level_values('pid').nunique())
+    actor = pb.actor
+
+    for pid in labels.index.get_level_values('pid').unique():        
+        participant_label = labels.loc[pid]        
+        results.append(func(
+            pid, participant_label, _sw_size_in_min, selected_features
+            ,actor
+        ))                
+    if use_ray:
+        pb.print_until_done()
+        results = ray.get(results)
+    df = pd.concat(results)    
+    return df
+
+def extract_slidingSubFeatures(
         _pid: str, _label: pd.DataFrame, _sw_size_in_min
         , selected_features, pba: ActorHandle
     ):
@@ -438,7 +461,7 @@ def extract_sliding_sub_features(
                     _d_win = _d_value[_window_start:_t]                   
                     if len(_d_win)<1:
                         Log.info(
-                            f'extract_sliding_sub_features: zero sized window\
+                            f'extract_slidingSubFeatures: zero sized window\
                                 between{_window_start}-{_t} '
                         )
                         continue
@@ -458,16 +481,21 @@ def extract_sliding_sub_features(
 
                     _f_win = {}
                     for k, v in _f.items():
-                        feature_name = '{}#{}#{}#{}'.format(_d_name, _w_name,_sw_name, k)                        
+                        feature_name = f'{_d_name}#{k}'
+                        print('feature_name',feature_name)
                         if feature_name in selected_features:
                             _f_win[feature_name]=v
                         
                     _row.append(_f_win)                                
-                    Log.info('extract_sliding_sub_features', 'Complete subwindowed ({}) feature extraction for data {}.'.format(_sw_name, _d_name))
+                    # Log.info(
+                    #     'extract_slidingSubFeatures'
+                    #     , f'Complete sliding subwindow for {_d_name} on {_sw_size_in_min}MIN.'
+                    # )
                 except:
                     Log.err(
-                        'extract_sliding_sub_features', 'Error occurs on pid = {}, data = {}, subwindow = {} at time = {}\nTraceback:\n{}'.format(
-                            _d_name, _sw_name, _pid, _t, traceback.format_exc())
+                        'extract_slidingSubFeatures'
+                        , f'Error at {_t}'
+                        , traceback.format_exc()
                     )
             
             if len(_row)>0:
@@ -482,7 +510,7 @@ def extract_sliding_sub_features(
 
     _X    = pd.DataFrame(_features)   
     _X = _X.set_index(['pid','sliding_timestamp'])       
-    Log.info('extract_sliding_sub_features', 'Complete feature extraction (n = {}, dim = {}).'.format(_X.shape[0], _X.shape[1]))
+    Log.info('extract_slidingSubFeatures', 'Complete feature extraction (n = {}, dim = {}).'.format(_X.shape[0], _X.shape[1]))
     pba.update.remote(1)
     return _X
 
@@ -590,29 +618,6 @@ def parallellize_extract_sub(
     return pd.concat(results)
 
 
-def parallellize_extract_sliding(
-            labels: pd.DataFrame,
-            w_name: str,
-            w_size: int,
-            selected_features: list,
-            use_ray: bool = False             
-    ):
-    func = ray.remote(extract_sliding_sub_features).remote if use_ray else extract_sliding_sub_features
-
-    results = []
-    Log.LEVEL = 2
-    pb = ProgressBar(labels.index.get_level_values('pid').nunique())
-    actor = pb.actor
-
-    for pid in labels.index.get_level_values('pid').unique():        
-        participant_label = labels.loc[pid]        
-        results.append(func(pid, participant_label, w_name, w_size, selected_features,actor))                
-    if use_ray:
-        pb.print_until_done()
-        results = ray.get(results)
-
-    df = pd.concat(results)    
-    return df
 
 
 
