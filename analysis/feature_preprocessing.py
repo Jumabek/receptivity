@@ -16,8 +16,16 @@ def drop_zero_variance(data):
     return data
 
 
-# when extracting supoprt features some values occur less, hence will be instantiated as NaN when making dataframe
-def impute_support_features(df_all): # probably should be done while extracting featuerfs
+# when extracting supoprt features some values of sensor will
+# not occur in the data,
+# hence will be instantiated as NaN when making dataframe
+def impute_support_feature(df):
+    support_features = df.columns[df.columns.str.contains('#SUP')]
+    df[support_features] = df[support_features].fillna(0)
+    return df
+
+    
+def impute_support_features_old(df_all): # probably should be done while extracting featuerfs
     df_imp = []
     for pid in (df_all.index.get_level_values('pid').unique()):
         df = df_all.loc[pid]

@@ -416,7 +416,7 @@ def parallellize_extract_sliding(
 
 def extract_slidingSubFeatures(
         _pid: str, _label: pd.DataFrame, _sw_size_in_min
-        , selected_features, pba: ActorHandle
+        , selected_features, pba=None
     ):
     '''
     - Slides through the whole data (e.g, 30 min window)
@@ -487,11 +487,11 @@ def extract_slidingSubFeatures(
                 ,'timestamp':_t
             })
             _features.append(_feature)# appending feature for the given subwindow
-
-    _X    = pd.DataFrame(_features).set_index(['pid','timestamp'])
-    Log.info('extract_slidingSubFeatures', 'Complete feature extraction (n = {}, dim = {}).'.format(_X.shape[0], _X.shape[1]))
-    pba.update.remote(1)
-    return impute_support_features(_X)
+    return pd.DataFrame(_features)
+    # _X    = pd.DataFrame(_features).set_index(['pid','timestamp'])
+    # Log.info('extract_slidingSubFeatures', 'Complete feature extraction (n = {}, dim = {}).'.format(_X.shape[0], _X.shape[1]))
+    # pba.update.remote(1)
+    # return impute_support_features(_X)
 
 
 def extract_extended_parallel(
