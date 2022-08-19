@@ -25,8 +25,6 @@ def impute_support_features(df_all): # probably should be done while extracting 
         for col in support_features:
             df.loc[df[col].isnull(),col] = 0
         
-        #df.insert(0,'pid',pid)
-        #df = pd.concat((df,pd.DataFrame({'pid':pid})),axis=1) 
         df_imp.append(df.assign(pid=pid))
     return pd.concat(df_imp).reset_index().set_index(df_all.index.names)
 

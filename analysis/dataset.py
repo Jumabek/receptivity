@@ -20,6 +20,7 @@ from datetime import timedelta
 from asyncio import Event
 from typing import Tuple
 
+from feature_preprocessing import impute_support_features
 import sys  
 sys.path.insert(0, '../')
 from utils import Log, get_columns, get_dataTypes, on_ray
@@ -43,6 +44,7 @@ from statsmodels.tsa import stattools as st
 from scipy import stats as sp
 import traceback
 import warnings
+
 
 def _extract_numeric_feature(_x: np.ndarray) -> Dict[str, any]:
     _N = len(_x) # number of data points within the given window
@@ -259,18 +261,6 @@ def extract_extendedFeatures(_pid: str, _label: pd.DataFrame, pba=None):
         pba.update.remote(1)
     return _X
 
-def impute_support_features(df_all): # probably should be done while extracting featuerfs
-    df_imp = []
-    for pid in (df_all.index.get_level_values('pid').unique()):
-        df = df_all.loc[pid]
-        support_features = df.columns[df.columns.str.contains('#SUP')]
-        for col in support_features:
-            df.loc[df[col].isnull(),col] = 0
-        
-        df.insert(0,'pid',pid)
-        df_imp.append(df)
-    return pd.concat(df_imp).reset_index().set_index(df_all.index.names)
-
 
 def extract(_pid: str, _label: pd.DataFrame, _w_name, _w_size, pba=None):
     
@@ -387,9 +377,11 @@ def extract_sub(_pid: str, _label: pd.DataFrame, _w_name, _w_size, num_sub,  pba
                 _feature = reduce(lambda a, b: dict(a, **b), _row) # [{'ACT_CUR':STILL}, {'BAT_LEV_CUR':44}]=> {'ACT_CUR':STILL, 'BAT_LEV_CUR':44}
             else:
                 _feature = {}
-            _feature['pid'] = _pid
-            _feature['timestamp'] = ema_time
-            _feature['sub_timestamp'] = _t
+            _feature.update({
+                'pid':_pid
+                ,'timestamp':ema_time
+                ,'sub_timestamp':_t
+            })
             _features.append(_feature)# appending feature for the given intervention
         
     _X    = pd.DataFrame(_features) 
@@ -475,7 +467,6 @@ def extract_slidingSubFeatures(
                     for k, v in _f.items():
                         feature_name = f'{_d_name}#{k}'
                         if feature_name in selected_features:
-                            feature_name = f'{feature_name}#{_sw_size_in_min}MIN'
                             _f_win[feature_name]=v
                         
                     _row.append(_f_win)                                
@@ -491,16 +482,16 @@ def extract_slidingSubFeatures(
                 _feature = reduce(lambda a, b: dict(a, **b), _row)                
             else:
                 _feature = {}      
-            
-            _feature['pid'] = _pid
-            _feature['timestamp'] = _t            
+            _feature.update({
+                'pid':_pid
+                ,'timestamp':_t
+            })
             _features.append(_feature)# appending feature for the given subwindow
 
-    _X    = pd.DataFrame(_features)   
-    _X = _X.set_index(['pid','timestamp'])       
+    _X    = pd.DataFrame(_features).set_index(['pid','timestamp'])
     Log.info('extract_slidingSubFeatures', 'Complete feature extraction (n = {}, dim = {}).'.format(_X.shape[0], _X.shape[1]))
     pba.update.remote(1)
-    return _X
+    return impute_support_features(_X)
 
 
 def extract_extended_parallel(

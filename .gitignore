@@ -2,4 +2,3 @@ data/
 __pycache__/
 */__pycache__/
 analysis/catboost_info/
-analysis/feature/
