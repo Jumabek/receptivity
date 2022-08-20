@@ -392,29 +392,27 @@ def extract_sub(_pid: str, _label: pd.DataFrame, _w_name, _w_size, num_sub,  pba
 
 
 def parallellize_extract_sliding(
-        labels: pd.DataFrame, _sw_size_in_min ,selected_features: list,
-        use_ray: bool = False             
+        labels: pd.DataFrame, _sw_size_in_min ,selected_features: list
     ):
-    func = ray.remote(extract_slidingSubFeatures).remote if use_ray else extract_slidingSubFeatures
 
     results = []
     Log.LEVEL = 2
     pb = ProgressBar(labels.index.get_level_values('pid').nunique())
     actor = pb.actor
 
+    func = ray.remote(extract_slidingFeatures).remote 
     for pid in labels.index.get_level_values('pid').unique():        
         participant_label = labels.loc[pid]        
         results.append(func(
             pid, participant_label, _sw_size_in_min, selected_features
             ,actor
         ))                
-    if use_ray:
-        pb.print_until_done()
-        results = ray.get(results)
+    pb.print_until_done()
+    results = ray.get(results)
     df = pd.concat(results)    
     return df
 
-def extract_slidingSubFeatures(
+def extract_slidingFeatures(
         _pid: str, _label: pd.DataFrame, _sw_size_in_min
         , selected_features, pba=None
     ):
@@ -487,11 +485,11 @@ def extract_slidingSubFeatures(
                 ,'timestamp':_t
             })
             _features.append(_feature)# appending feature for the given subwindow
-    return pd.DataFrame(_features)
-    # _X    = pd.DataFrame(_features).set_index(['pid','timestamp'])
-    # Log.info('extract_slidingSubFeatures', 'Complete feature extraction (n = {}, dim = {}).'.format(_X.shape[0], _X.shape[1]))
-    # pba.update.remote(1)
-    # return impute_support_features(_X)
+    _X    = pd.DataFrame(_features).set_index(['pid','timestamp'])
+    Log.info('extract_slidingSubFeatures', 'Complete feature extraction (n = {}, dim = {}).'.format(_X.shape[0], _X.shape[1]))
+    pba.update.remote(1)
+    #_X = impute_support_features(_X)
+    return _X    
 
 
 def extract_extended_parallel(
