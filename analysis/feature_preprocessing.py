@@ -61,6 +61,7 @@ import traceback
 
 def normalization(df_orig):
     df = deepcopy(df_orig)
+    
     I_num = df.dtypes==float    
     for c in df.columns[I_num]:
         df[c] = (df[c]-df[c].min()) / (df[c].max()-df[c].min())        
