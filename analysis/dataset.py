@@ -316,63 +316,70 @@ def extract(_pid: str, _label: pd.DataFrame, _w_name, _w_size, pba=None):
 
 
 
-def get_sub_window_size(w_name, w_size,NUM_SUBWINDOWS=6):
-    assert w_size%NUM_SUBWINDOWS==0, f'your window  {w_name}:{w_size} is not divisable by {NUM_SUBWINDOWS}'
+def get_sub_window_size( w_size,NUM_SUBWINDOWS=6):
+    assert w_size%NUM_SUBWINDOWS==0,\
+    f'{w_size} MIN is not divisable by {NUM_SUBWINDOWS}'
     
     sw_size = w_size//NUM_SUBWINDOWS    
-    assert sw_size%utils.SEC_IN_MIN==0, f'sub_window size should be at least in minute level {w_size/{NUM_SUBWINDOWS}}'
 
-    if sw_size%utils.SEC_IN_HOUR==0:
-        sw_name=f'{sw_size//utils.SEC_IN_HOUR}HR'
-    else:
-        sw_name=f'{sw_size//utils.SEC_IN_MIN}MIN'
-    return sw_name, sw_size
+    # if sw_size%utils.SEC_IN_HOUR==0:
+    #     sw_name=f'{sw_size//utils.SEC_IN_HOUR}HR'
+    # else:
+    #     sw_name=f'{sw_size//utils.SEC_IN_MIN}MIN'
+    return sw_size
 
 
-def extract_sub(_pid: str, _label: pd.DataFrame, _w_name, _w_size, num_sub,  pba: ActorHandle, selected_features=None):
+def extract_sub(
+    _pid: str, _label: pd.DataFrame, w_size_in_min, num_sub
+    ,  pba=None, selected_features=None
+):
     _features = []
-    _sw_name, _sw_size = get_sub_window_size(_w_name, _w_size, NUM_SUBWINDOWS=num_sub) # E: full window: 6HR, sub window size 30MIN
+    _sw_size_in_min = get_sub_window_size(
+        w_size_in_min, NUM_SUBWINDOWS=num_sub
+    ) # E: full window: 6HR, sub window size 30MIN
     _raw = preprocess(_pid=_pid, _until=_label.index.max())
     
     for ema_time in _label.index: #for each ema extract |_w_size//_sw_size}| window features
-        sub_windows = np.arange(ema_time-timedelta(seconds=_w_size+_sw_size), ema_time, timedelta(seconds=_sw_size))        
+        subwindow_start = ema_time-timedelta(
+            minutes=w_size_in_min
+        )
+        sub_windows = np.arange(
+            subwindow_start
+            , ema_time+timedelta(minutes=1)
+            , timedelta(minutes=_sw_size_in_min)
+        )   
         for i,_t in enumerate(sub_windows[1:], start=1):
             _row = []
             # Windowed Features
             for _d_name in _raw.keys():
                 if 'Today' in _d_name:
                     continue
-                try:
-                    _d_value = _raw[_d_name]                    
-                    _s = sub_windows[i-1]                    
-                    _e = sub_windows[i]
+                
+                #window for the data source
+                _s, _e = sub_windows[i-1], sub_windows[i]
+                _d_value = _raw[_d_name][_s:_e]                    
+                if len(_d_value)<1:
+                    continue # zero sized window
 
-                    #window
-                    _d_win = _d_value[_s:_e]
-                    if len(_d_win)<1:
-                        continue # zero sized window
+                _d_win_a = np.asarray(_d_value)    # throws away index(datetime)
+                _f = _extract_nominal_feature(
+                    _d_win_a
+                    , False if _d_name in [
+                        'location_cluster', 'appUsage_appPackage'
+                    ] else True                        
+                ) if (_d_value.dtype != float) else _extract_numeric_feature(_d_win_a)
 
-                    _d_win_a = np.asarray(_d_win)    # throws away index(datetime)
-                    _f = _extract_nominal_feature(
-                        _d_win_a, False if _d_name in ['location_cluster', 'appUsage_appPackage'] else True                        
-                    ) if (_d_value.dtype != float)  else _extract_numeric_feature(_d_win_a)
-
-                    if selected_features is None:
-                        _f_win = {'{}#{}#{}#{}'.format(_d_name, _w_name, _sw_name, k): v for k, v in _f.items()} 
-                    else:    
-                        _f_win = {}
-                        for k, v in _f.items():
-                            feature_name = '{}#{}#{}#{}'.format(_d_name, _w_name, _sw_name, k)                        
-                            if feature_name in selected_features:
-                                _f_win[feature_name]=v
+                if selected_features is None:
+                    _f_win = {f'{_d_name}#{k}': v for k, v in _f.items()} 
+                else:    
                     
-                    _row.append(_f_win)
-                except:
-                    Log.err(
-                        'extract', 'Error occurs on pid = {}, data = {}, window = {} at time = {}\nTraceback:\n{}'.format(
-                            _d_name, _w_name, _pid, _t, traceback.format_exc())
-                    )
-     
+                    _f_win = {f'{_d_name}#{k}':v for k, v in _f.items() \
+                        if f'{_d_name}#{k}'
+                    }
+                                    
+                _row.append(_f_win)
+            
+    
             if len(_row)>0:
                 _feature = reduce(lambda a, b: dict(a, **b), _row) # [{'ACT_CUR':STILL}, {'BAT_LEV_CUR':44}]=> {'ACT_CUR':STILL, 'BAT_LEV_CUR':44}
             else:
@@ -387,7 +394,8 @@ def extract_sub(_pid: str, _label: pd.DataFrame, _w_name, _w_size, num_sub,  pba
     _X    = pd.DataFrame(_features) 
     _X = _X.set_index(['pid','timestamp','sub_timestamp']).sort_index()
     Log.info('extract_sub', 'Complete feature extraction (n = {}, dim = {}).'.format(_X.shape[0], _X.shape[1]))
-    pba.update.remote(1)
+    if pba is not None:
+        pba.update.remote(1)
     return _X
 
 
@@ -567,31 +575,28 @@ def parallellize_extract(
     df = pd.concat(results)    
     return df
 
+
 def parallellize_extract_sub(
             labels: pd.DataFrame,
-            w_name: str,
-            w_size: int,
+            w_size_in_min: int,
             num_sub: int
-            ,use_ray: bool = False,
-            selected_features: str = None
+            ,selected_features: str = None
 
     ):
-    func = ray.remote(extract_sub).remote if use_ray else extract_sub
-
-    results = []
-    
     pb = ProgressBar(labels.index.get_level_values('pid').nunique())
     actor = pb.actor
 
-    Log.LEVEL = 2
+    func = ray.remote(extract_sub).remote 
+    results = []
+
     for pid in labels.index.get_level_values('pid').unique():
         participant_label = labels.loc[pid]        
-        results.append(func(pid, participant_label, w_name, w_size, num_sub, actor,selected_features=selected_features))  
-        
-        
-    if use_ray:
-        pb.print_until_done()
-        results = ray.get(results)
+        results.append(func(
+            pid, participant_label, w_size_in_min, num_sub, actor
+            ,selected_features=selected_features
+        ))  
+    pb.print_until_done()
+    results = ray.get(results)
     return pd.concat(results)
 
 

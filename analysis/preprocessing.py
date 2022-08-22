@@ -309,7 +309,7 @@ def _load_pace_n_speed(_pid:str):
 def _resample(_x: pd.Series, _until: pd.Timestamp = None):
     # using customized interval for each data soruce shoudl be considered
     _xx = _x
-    if _until and _x.index.max() < _until:
+    if _until and (_x.index.max() < _until):
         _xx[_until] = np.nan
 
     if _xx.dtype != float:
