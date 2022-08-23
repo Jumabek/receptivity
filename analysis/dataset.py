@@ -507,10 +507,8 @@ def extract_extended_parallel(
     Log.LEVEL = 2
     pb = ProgressBar(labels.index.get_level_values('pid').nunique())
     actor = pb.actor
-    
 
     func = ray.remote(extract_extendedFeatures).remote
-
     for pid in (labels.index.get_level_values('pid').unique()):
         print('Processing {}'.format(pid))
         participant_label = labels.loc[pid]        
@@ -518,12 +516,6 @@ def extract_extended_parallel(
         
     pb.print_until_done()
     results = ray.get(results)
-    # else:
-    #     for pid in (labels.index.get_level_values('pid').unique()):
-    #         print('Processing {}'.format(pid))
-    #         participant_label = labels.loc[pid]        
-    #         results.append(extract_extendedFeatures(pid, participant_label))        
-                
     df = pd.concat(results)    
     return df
 
