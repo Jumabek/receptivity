@@ -336,13 +336,11 @@ def extract_sub(
     _features = []
     _sw_size_in_min = get_sub_window_size(
         w_size_in_min, NUM_SUBWINDOWS=num_sub
-    ) # E: full window: 6HR, sub window size 30MIN
+    ) 
     _raw = preprocess(_pid=_pid, _until=_label.index.max())
-    
-    for ema_time in _label.index: #for each ema extract |_w_size//_sw_size}| window features
-        subwindow_start = ema_time-timedelta(
-            minutes=w_size_in_min
-        )
+    #for each ema extract |_w_size//_sw_size}| window features
+    for ema_time in _label.index: 
+        subwindow_start = ema_time-timedelta(minutes=w_size_in_min)
         sub_windows = np.arange(
             subwindow_start
             , ema_time+timedelta(minutes=1)
