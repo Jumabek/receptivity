@@ -1,15 +1,1 @@
-analysis/feature/** filter=lfs diff=lfs merge=lfs -text
-#analysis/feature/arm filter=lfs diff=lfs merge=lfs -text
-analysis/feature/arm filter=lfs diff=lfs merge=lfs -text
 *.csv filter=lfs diff=lfs merge=lfs -text
-analysis/feature/arm/160MIN_2.csv filter=lfs diff=lfs merge=lfs -text
-analysis/feature/arm/160MIN_4.csv filter=lfs diff=lfs merge=lfs -text
-analysis/feature/arm/160MIN_8.csv filter=lfs diff=lfs merge=lfs -text
-analysis/feature/arm/40MIN_2.csv filter=lfs diff=lfs merge=lfs -text
-analysis/feature/arm/40MIN_4.csv filter=lfs diff=lfs merge=lfs -text
-analysis/feature/arm/40MIN_8.csv filter=lfs diff=lfs merge=lfs -text
-analysis/feature/arm/sliding_features.csv filter=lfs diff=lfs merge=lfs -text
-analysis/feature/arm/80MIN_2.csv filter=lfs diff=lfs merge=lfs -text
-analysis/feature/arm/80MIN_4.csv filter=lfs diff=lfs merge=lfs -text
-analysis/feature/arm/80MIN_8.csv filter=lfs diff=lfs merge=lfs -text
-analysis/feature/arm/agg_feature.csv filter=lfs diff=lfs merge=lfs -text
