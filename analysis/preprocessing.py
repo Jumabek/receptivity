@@ -12,13 +12,13 @@ from functools import reduce
 import sys  
 sys.path.insert(0, '../')
 from utils import *
+import utils
 
 Log.LEVEL = 2
 from sys import platform
 
-reg_ex = '../data/kemphone/aggregated_csv/{}_*'    
+reg_ex = join(f'{utils.DATAROOT}','aggregated_csv/{}_*')
     
-
 COLUMNS = get_columns()
 DTYPES = get_dataTypes()
 
@@ -32,7 +32,13 @@ def replace_inf_with_minmax(df):
 
 def _load_data(data_source: str, pid: str, in_field: str=None, in_value: Iterable[str] = None):
     M = COLUMNS.str.contains(data_source)|COLUMNS.str.contains('timestamp')    
-    try:        
+    candidate_files = glob(reg_ex.format(pid))
+    if len(candidate_files)==0:
+        print("There is no matching file for the participant")
+        raise 
+
+    try:     
+           
         fn = glob(reg_ex.format(pid))[0]
         data = pd.read_csv(fn, usecols=COLUMNS[M], dtype=DTYPES)
         # https://docs.google.com/document/d/1dqI7F0-3st5771hrV2RIgh-mG_El5fvz/edit
@@ -43,7 +49,7 @@ def _load_data(data_source: str, pid: str, in_field: str=None, in_value: Iterabl
         if in_field and in_value:        
             data = data.loc[data[in_field].isin(in_value)]
     except Exception as e:        
-        print('_load_data', 'error in read_csv', pid,e)
+        print('_load_data', 'error in read_csv', pid,e, fn)
             
     return data.set_index('timestamp').dropna(how='all')
 

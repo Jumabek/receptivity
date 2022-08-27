@@ -3,3 +3,4 @@ ray
 statsmodels
 catboost
 xgboost
+imblearn
