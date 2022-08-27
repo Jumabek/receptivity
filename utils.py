@@ -25,7 +25,7 @@ SEC_IN_DAY = SEC_IN_HOUR*HOUR_IN_DAY
 STUDY_DURATION_IN_DAYS = 7
 STUDY_DURATION = (STUDY_DURATION_IN_DAYS-1)*MS_IN_DAY+ 12*60*60*1000 # from [10 am - 22 pm] 
 DAY_IN_WEEK = 7
-DATAROOT = '../data/kemphone'
+DATAROOT = '../data/kemophone'
 RANDOM_STATE = 42
 
 def extract_pcode(fn):
