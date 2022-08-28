@@ -72,8 +72,12 @@ def _extract_numeric_feature(_x: np.ndarray) -> Dict[str, any]:
     _skew = sp.skew(_x, bias=False)
 
     # Sample Kurtosis
-    _kurt = sp.kurtosis(_x, bias=False)
-
+    try:
+        _kurt = sp.kurtosis(_x, bias=False)
+    except RuntimeWarning as e:
+        print("got warning for the following data",e)
+        print(_x)
+        
     # Abs. Sum of Changes
     _asc = np.sum(np.abs(np.diff(_x)))
 
