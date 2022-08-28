@@ -73,6 +73,7 @@ def _extract_numeric_feature(_x: np.ndarray) -> Dict[str, any]:
 
     # Sample Kurtosis
     try:
+        print("Computing Kurtosis")
         _kurt = sp.kurtosis(_x, bias=False)
     except RuntimeWarning as e:
         print("got warning for the following data",e)
