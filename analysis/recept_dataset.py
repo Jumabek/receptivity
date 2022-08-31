@@ -72,12 +72,8 @@ def _extract_numeric_feature(_x: np.ndarray) -> Dict[str, any]:
     _skew = sp.skew(_x, bias=False)
 
     # Sample Kurtosis
-    try:
-        print("Computing Kurtosis")
-        _kurt = sp.kurtosis(_x, bias=False)
-    except RuntimeWarning as e:
-        print("got warning for the following data",e)
-        print(_x)
+    _kurt = sp.kurtosis(_x, bias=False)
+
         
     # Abs. Sum of Changes
     _asc = np.sum(np.abs(np.diff(_x)))
@@ -482,7 +478,9 @@ def parallellize_extract_sliding(
         ))                
     pb.print_until_done()
     results = ray.get(results)
-    df = pd.concat(results)    
+    df = impute_support_features(
+        pd.concat(results)        
+    )
     return df
 
 def extract_slidingFeatures(
@@ -560,9 +558,9 @@ def extract_slidingFeatures(
             _features.append(_feature)# appending feature for the given subwindow
     _X    = pd.DataFrame(_features).set_index(['pid','timestamp'])
     Log.info('extract_slidingSubFeatures', 'Complete feature extraction (n = {}, dim = {}).'.format(_X.shape[0], _X.shape[1]))
-    pba.update.remote(1)
-    #_X = impute_support_features(_X)
-    return _X    
+    pba.update.remote(1) if pba is not None else None
+    _X = impute_support_features(_X)
+    return _X
 
 
 def extract_extended_parallel(
