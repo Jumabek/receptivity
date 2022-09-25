@@ -582,7 +582,10 @@ def parallellize_extract_sub(
         ))  
     pb.print_until_done()
     results = ray.get(results)
-    return pd.concat(results)
+    return impute_support_features(
+        pd.concat(results)
+    )
+    
 
 
 

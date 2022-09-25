@@ -26,6 +26,7 @@ def impute_support_features(df):
 
 
 def impute(data, method='participant_mean'):
+    I_names = data.index.names
     pids = data.index.get_level_values('pid').unique()
     df_list = []
     for pid in pids: 
@@ -36,7 +37,7 @@ def impute(data, method='participant_mean'):
         df = df.assign(pid=pid)
         df_list.append(df)
     df_all = pd.concat(df_list).reset_index(        
-    ).set_index(['pid','timestamp']).sort_index()
+    ).set_index(I_names).sort_index()
     return df_all
 
 
@@ -59,7 +60,7 @@ def impute_participant(pdata, method='participant_mean'):
 
 import traceback
 
-def normalization(df_orig):
+def normalize(df_orig):
     df = deepcopy(df_orig)
     
     I_num = df.dtypes==float    
