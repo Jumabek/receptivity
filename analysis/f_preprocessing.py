@@ -51,7 +51,7 @@ def impute_participant(pdata, method='participant_mean'):
             pdata.loc[:,c] = pdata[c].fillna(pdata[c].mean())
             #pdata[c].fillna(pdata[c].mean(), inplace=True)
         for c in pdata.columns[pdata.dtypes==float]:
-            pdata[c] = pdata[c].fillna(NAFILL)# there will still be some NaN values
+            pdata.loc[:,c] = pdata[c].fillna(NAFILL).values# there will still be some NaN values
     
     for c in pdata.columns[pdata.dtypes!=float]:
     # other features such as timeseries should be imputed with mean for that partiicpant
