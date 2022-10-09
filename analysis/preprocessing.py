@@ -324,7 +324,7 @@ def _resample(_x: pd.Series, _until: pd.Timestamp = None):
         return _xx.resample('1S').mean().interpolate(method='linear').dropna()
 
     
-def preprocess(_pid: str, _until: pd.Timestamp = None) -> Dict[str, pd.Series]:
+def preprocess(_pid: str, _until: pd.Timestamp = None, resample=True) -> Dict[str, pd.Series]:
     Log.info('preprocess', 'Start data preprocessing: pid={}'.format(_pid))
     
     funcs = [
@@ -351,9 +351,9 @@ def preprocess(_pid: str, _until: pd.Timestamp = None) -> Dict[str, pd.Series]:
     data = [f(_pid) for f in funcs]
     data = reduce(lambda a, b: dict(a, **b), data)
     Log.info('preprocess', 'Complete to load data.')
-    
-    for k, v in data.items():        
-        data[k]= _resample(v, _until)
+    if resample:
+        for k, v in data.items():        
+            data[k]= _resample(v, _until)
     
     return data
 
