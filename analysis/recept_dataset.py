@@ -331,12 +331,13 @@ def get_sub_window_size( w_size,NUM_SUBWINDOWS=6):
 def extract_sub(
     _pid: str, _label: pd.DataFrame, w_size_in_min, num_sub
     ,  pba=None, selected_features=None
+    , resample = True
 ):
     _features = []
     _sw_size_in_min = get_sub_window_size(
         w_size_in_min, NUM_SUBWINDOWS=num_sub
     ) 
-    _raw = preprocess(_pid=_pid, _until=_label.index.max())
+    _raw = preprocess(_pid=_pid, _until=_label.index.max(), resample =resample)
     #for each ema extract |_w_size//_sw_size}| window features
     for ema_time in _label.index: 
         subwindow_start = ema_time-timedelta(minutes=w_size_in_min)
@@ -566,6 +567,7 @@ def parallellize_extract_sub(
             w_size_in_min: int,
             num_sub: int
             ,selected_features: str = None
+            , resample = True
 
     ):
     pb = ProgressBar(labels.index.get_level_values('pid').nunique())
@@ -579,6 +581,7 @@ def parallellize_extract_sub(
         results.append(func(
             pid, participant_label, w_size_in_min, num_sub, actor
             ,selected_features=selected_features
+            , resample = resample
         ))  
     pb.print_until_done()
     results = ray.get(results)
