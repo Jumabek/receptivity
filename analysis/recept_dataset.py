@@ -120,12 +120,19 @@ def _extract_numeric_feature(_x: np.ndarray) -> Dict[str, any]:
     )
 
 
-def _extract_nominal_feature(_x: np.ndarray, _is_bounded: bool) -> Dict[str, any]:
+def _extract_nominal_feature(_x: np.ndarray, _is_bounded: bool, _pid=None) -> Dict[str, any]:
     _N = len(_x)
 
     # Support
-    _val, _supp = np.unique(_x, return_counts=True)
-
+    try:
+        _val, _supp = np.unique(_x, return_counts=True)
+    except BaseException as e: # base exception contains inside KeyboardInterrupt error
+        print('error message',repr(e))
+        print("Error in _extract_nominal_feature")
+        print("pid: ", _pid)
+        print(_x.shape)
+        print(_x)
+        exit()
     # Entropy
     _entr = sp.entropy(_supp)
 
@@ -363,7 +370,8 @@ def extract_sub(
                     _d_win_a
                     , False if _d_name in [
                         'location_cluster', 'appUsage_appPackage'
-                    ] else True                        
+                    ] else True          
+                    , _pid=_pid              
                 ) if (_d_value.dtype != float) else _extract_numeric_feature(_d_win_a)
 
                 if selected_features is None:
@@ -397,6 +405,7 @@ def extract_sub(
 
 def parallellize_extract_sliding(
         labels: pd.DataFrame, _sw_size_in_min ,selected_features: list
+        , resample = True
     ):
 
     results = []
@@ -410,6 +419,7 @@ def parallellize_extract_sliding(
         results.append(func(
             pid, participant_label, _sw_size_in_min, selected_features
             ,actor
+            , resample = resample
         ))                
     pb.print_until_done()
     results = ray.get(results)
@@ -421,6 +431,7 @@ def parallellize_extract_sliding(
 def extract_slidingFeatures(
         _pid: str, _label: pd.DataFrame, _sw_size_in_min
         , selected_features, pba=None
+        , resample = False
     ):
     '''
     - Slides through the whole data (e.g, 30 min window)
@@ -428,7 +439,7 @@ def extract_slidingFeatures(
     '''
     assert selected_features !=None, 'please pass selected_features'
     
-    _raw = preprocess(_pid=_pid, _until=_label.index.max())
+    _raw = preprocess(_pid=_pid, _until=_label.index.max(), resample=resample)
     #10 am of the day when participant started collecting
     _start_of_week = _label.index.min().replace(hour=10, minute=0, second=0) 
     

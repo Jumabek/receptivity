@@ -351,9 +351,12 @@ def preprocess(_pid: str, _until: pd.Timestamp = None, resample=True) -> Dict[st
     data = [f(_pid) for f in funcs]
     data = reduce(lambda a, b: dict(a, **b), data)
     Log.info('preprocess', 'Complete to load data.')
-    if resample:
-        for k, v in data.items():        
+    
+    for k, v in data.items():        
+        if resample:
             data[k]= _resample(v, _until)
+        else:
+            data[k]= v.dropna()
     
     return data
 
