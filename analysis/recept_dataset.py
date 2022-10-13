@@ -431,7 +431,7 @@ def parallellize_extract_sliding(
 def extract_slidingFeatures(
         _pid: str, _label: pd.DataFrame, _sw_size_in_min
         , selected_features, pba=None
-        , resample = False
+        , resample = True
     ):
     '''
     - Slides through the whole data (e.g, 30 min window)
@@ -455,9 +455,10 @@ def extract_slidingFeatures(
                    
             _row = []        
             # loop throuugh different data sources
-            for _d_name, _d_value in _raw.items():
+            for d_index, (_d_name, _d_value) in enumerate(_raw.items()):
                 if 'Today' in _d_name:
                     continue # no need to extract time features for (accumulated) daily sensor values             
+                
                 try:                    
                     _window_start = _t - dt.timedelta(minutes=_sw_size_in_min)                    
                     _d_win = _d_value[_window_start:_t]                   
