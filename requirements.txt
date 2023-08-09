@@ -38,7 +38,7 @@ msgpack==1.0.5
 nest-asyncio==1.5.7
 numpy==1.25.2
 packaging==23.1
-pandas==2.0.3
+pandas==1.5.1
 parso==0.8.3
 patsy==0.5.3
 pexpect==4.8.0
